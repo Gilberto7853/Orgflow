@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OrgFlow — Personal Organizer</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface-2: #f1f3f6;
+    --border: #e6e8ec;
+    --border-strong: #d4d8df;
+    --text: #1a1d23;
+    --text-muted: #6b7280;
+    --text-faint: #9ca3af;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-soft: #eef2ff;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-rose: #ef4444;
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
+    --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.06);
+    --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+  }
+
+  input, textarea, select {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  /* Layout */
+  .app {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    height: 100vh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 18px;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+  }
+
+  .logo-mark {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+    display: grid;
+    place-items: center;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-weight: 500;
+    text-align: left;
+    width: 100%;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .nav-btn:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .nav-btn.active {
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  .nav-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    padding: 16px 12px 6px;
+  }
+
+  /* Main content */
+  .main {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    flex-shrink: 0;
+  }
+
+  .topbar h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .topbar-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    font-size: 13px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    transition: background 0.12s, border-color 0.12s;
+  }
+
+  .btn:hover { background: var(--surface-2); }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .btn-primary:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+  }
+
+  .btn-danger {
+    color: var(--accent-rose);
+    border-color: var(--border);
+  }
+
+  .btn-danger:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+  }
+
+  .btn-ghost { border-color: transparent; }
+
+  .view {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+  }
+
+  .view.hidden { display: none; }
+
+  /* ----------- Board ----------- */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .column {
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+    overflow: hidden;
+  }
+
+  .column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 0 4px;
+  }
+
+  .column-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .column-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-faint);
+  }
+  .column[data-status="todo"] .column-dot { background: #94a3b8; }
+  .column[data-status="in-progress"] .column-dot { background: var(--accent-amber); }
+  .column[data-status="done"] .column-dot { background: var(--accent-green); }
+
+  .column-count {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  .add-card-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    transition: background 0.12s;
+  }
+  .add-card-btn:hover { background: var(--border); }
+
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    padding: 2px;
+    flex: 1;
+    min-height: 40px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    cursor: grab;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.12s, transform 0.06s;
+  }
+
+  .card:hover { box-shadow: var(--shadow-md); }
+  .card:active { cursor: grabbing; }
+  .card.dragging { opacity: 0.5; }
+
+  .card-title {
+    font-weight: 500;
+    font-size: 13.5px;
+    margin-bottom: 6px;
+    line-height: 1.35;
+  }
+
+  .card-desc {
+    color: var(--text-muted);
+    font-size: 12.5px;
+    margin-bottom: 8px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+
+  .chip.client { background: var(--primary-soft); color: var(--primary); }
+  .chip.due { background: #fef3c7; color: #92400e; }
+  .chip.due.overdue { background: #fee2e2; color: #991b1b; }
+
+  .column.drag-over .cards { background: rgba(79, 70, 229, 0.06); border-radius: 6px; }
+
+  /* ----------- Clients ----------- */
+  .clients-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 16px;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .client-list {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .client-list-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .client-list-header strong {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .search-input:focus {
+    outline: none;
+    background: var(--surface);
+    border-color: var(--primary);
+  }
+
+  .client-search-wrap {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .client-items {
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .client-item {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .client-item:hover { background: var(--surface-2); }
+  .client-item.active { background: var(--primary-soft); }
+
+  .client-item-name {
+    font-weight: 500;
+    font-size: 13.5px;
+    margin-bottom: 2px;
+  }
+
+  .client-item-sub {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .client-detail {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 40px;
+  }
+
+  .empty-state-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    display: grid;
+    place-items: center;
+    margin-bottom: 14px;
+    color: var(--text-faint);
+  }
+
+  .client-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 12px;
+  }
+
+  .client-name-big {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+  }
+
+  .client-contact-row {
+    color: var(--text-muted);
+    font-size: 13px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .client-contact-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .section-block {
+    margin-top: 24px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+  }
+
+  .notes-area {
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    resize: vertical;
+    background: var(--surface);
+    transition: border-color 0.12s;
+  }
+  .notes-area:focus { outline: none; border-color: var(--primary); }
+
+  .task-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+    background: var(--surface);
+    transition: background 0.12s;
+  }
+  .task-row:hover { background: var(--surface-2); }
+
+  .task-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    background: var(--surface);
+    display: grid;
+    place-items: center;
+    transition: all 0.12s;
+  }
+  .task-checkbox.checked {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+
+  .task-row.done .task-title-text {
+    text-decoration: line-through;
+    color: var(--text-faint);
+  }
+
+  .task-title-text { flex: 1; font-size: 13.5px; }
+  .task-status-pill {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .task-delete {
+    color: var(--text-faint);
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: 4px;
+    transition: all 0.12s;
+    opacity: 0;
+  }
+  .task-row:hover .task-delete { opacity: 1; }
+  .task-delete:hover { background: #fef2f2; color: var(--accent-rose); }
+
+  .add-inline {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .add-inline input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+  .add-inline input:focus { outline: none; border-color: var(--primary); }
+  .add-inline input[type="date"] { flex: 0 0 140px; }
+
+  .appt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+    background: var(--surface);
+  }
+  .appt-row:hover { background: var(--surface-2); }
+  .appt-when {
+    font-weight: 500;
+    font-size: 13.5px;
+  }
+  .appt-notes {
+    color: var(--text-muted);
+    font-size: 12.5px;
+    margin-top: 2px;
+  }
+
+  /* ----------- Calendar ----------- */
+  .calendar-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+
+  .calendar-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .cal-month-label {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .cal-nav {
+    display: flex;
+    gap: 6px;
+  }
+
+  .cal-nav .btn { padding: 6px 10px; }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .cal-weekday {
+    background: var(--surface-2);
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+  }
+
+  .cal-day {
+    background: var(--surface);
+    min-height: 100px;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .cal-day:hover { background: var(--surface-2); }
+
+  .cal-day.other-month {
+    background: var(--bg);
+    color: var(--text-faint);
+  }
+
+  .cal-day-num {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    align-self: flex-start;
+  }
+
+  .cal-day.today .cal-day-num {
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+  }
+
+  .cal-event {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cal-event.task {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .cal-event.task.done {
+    background: var(--surface-2);
+    color: var(--text-faint);
+    text-decoration: line-through;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 480px;
+    box-shadow: var(--shadow-lg);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .modal-close {
+    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    transition: background 0.12s;
+  }
+  .modal-close:hover { background: var(--surface-2); }
+
+  .modal-body {
+    padding: 20px 22px;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    transition: border-color 0.12s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  .form-group textarea {
+    resize: vertical;
+    min-height: 70px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* Confirm modal */
+  .confirm-text {
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Scrollbar polish */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 6px;
+    border: 2px solid var(--surface);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 10px;
+      gap: 6px;
+    }
+    .logo { padding: 6px 10px; }
+    .sidebar-section-label { display: none; }
+    .nav-btn { white-space: nowrap; }
+    .board { grid-template-columns: 1fr; }
+    .clients-layout { grid-template-columns: 1fr; }
+    .calendar-grid .cal-day { min-height: 70px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">O</div>
+      <div>OrgFlow</div>
+    </div>
+    <div class="sidebar-section-label">Workspace</div>
+    <button class="nav-btn active" data-view="board">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="11" rx="1.5"/></svg>
+      Board
+    </button>
+    <button class="nav-btn" data-view="clients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+      Clients
+    </button>
+    <button class="nav-btn" data-view="calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Calendar
+    </button>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <h1 id="view-title">Board</h1>
+      <div class="topbar-actions" id="view-actions"></div>
+    </div>
+
+    <!-- Board -->
+    <div class="view" id="view-board">
+      <div class="board" id="board"></div>
+    </div>
+
+    <!-- Clients -->
+    <div class="view hidden" id="view-clients">
+      <div class="clients-layout">
+        <div class="client-list">
+          <div class="client-list-header">
+            <strong>Clients</strong>
+            <button class="btn btn-primary" id="new-client-btn">+ New</button>
+          </div>
+          <div class="client-search-wrap">
+            <input type="text" class="search-input" id="client-search" placeholder="Search clients..." />
+          </div>
+          <div class="client-items" id="client-items"></div>
+        </div>
+        <div class="client-detail" id="client-detail">
+          <div class="empty-state">
+            <div class="empty-state-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg>
+            </div>
+            <div>Select a client to see their details, or create a new one.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="view hidden" id="view-calendar">
+      <div class="calendar-wrap">
+        <div class="calendar-toolbar">
+          <div class="cal-month-label" id="cal-month-label">Month Year</div>
+          <div class="cal-nav">
+            <button class="btn" id="cal-prev">‹</button>
+            <button class="btn" id="cal-today">Today</button>
+            <button class="btn" id="cal-next">›</button>
+          </div>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Generic modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Title</h3>
+      <button class="modal-close" id="modal-close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   OrgFlow - lightweight personal organizer
+   Storage: localStorage under key "orgflow.v1"
+   ============================================================ */
+
+const STORAGE_KEY = "orgflow.v1";
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+
+const defaultState = {
+  clients: [], // {id, name, email, phone, notes}
+  tasks: [],   // {id, title, description, status, clientId?, dueDate?}
+  appointments: [], // {id, clientId, date, time, notes}
+};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return structuredClone(defaultState);
+    const parsed = JSON.parse(raw);
+    return { ...structuredClone(defaultState), ...parsed };
+  } catch (e) {
+    console.error("Failed to load state", e);
+    return structuredClone(defaultState);
+  }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+let currentView = "board";
+let selectedClientId = null;
+let calCursor = new Date(); // first day shown in calendar
+
+/* -------------------- Helpers -------------------- */
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function fmtDateLong(iso) {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+}
+function todayISO() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+function isOverdue(iso) {
+  return iso && iso < todayISO();
+}
+
+/* -------------------- View routing -------------------- */
+
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => switchView(btn.dataset.view));
+});
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll(".nav-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.view === view);
+  });
+  document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
+  document.getElementById("view-" + view).classList.remove("hidden");
+  const titleMap = { board: "Board", clients: "Clients", calendar: "Calendar" };
+  document.getElementById("view-title").textContent = titleMap[view];
+  renderTopbarActions();
+  if (view === "board") renderBoard();
+  if (view === "clients") renderClients();
+  if (view === "calendar") renderCalendar();
+}
+
+function renderTopbarActions() {
+  const el = document.getElementById("view-actions");
+  el.innerHTML = "";
+  if (currentView === "board") {
+    const b = document.createElement("button");
+    b.className = "btn btn-primary";
+    b.textContent = "+ New task";
+    b.onclick = () => openTaskModal(null);
+    el.appendChild(b);
+  } else if (currentView === "clients") {
+    // handled inside clients panel
+  } else if (currentView === "calendar") {
+    const b = document.createElement("button");
+    b.className = "btn btn-primary";
+    b.textContent = "+ New appointment";
+    b.onclick = () => openAppointmentModal(null);
+    el.appendChild(b);
+  }
+}
+
+/* -------------------- BOARD -------------------- */
+
+const COLUMNS = [
+  { id: "todo", title: "To Do" },
+  { id: "in-progress", title: "In Progress" },
+  { id: "done", title: "Done" },
+];
+
+function renderBoard() {
+  const root = document.getElementById("board");
+  root.innerHTML = "";
+  COLUMNS.forEach(col => {
+    const tasks = state.tasks.filter(t => t.status === col.id);
+    const colEl = document.createElement("div");
+    colEl.className = "column";
+    colEl.dataset.status = col.id;
+
+    colEl.innerHTML = `
+      <div class="column-header">
+        <div class="column-title">
+          <div class="column-dot"></div>
+          <span>${col.title}</span>
+          <span class="column-count">${tasks.length}</span>
+        </div>
+        <button class="add-card-btn" title="Add task">+</button>
+      </div>
+      <div class="cards" data-status="${col.id}"></div>
+    `;
+    colEl.querySelector(".add-card-btn").onclick = () => openTaskModal(null, col.id);
+
+    const cardsEl = colEl.querySelector(".cards");
+    tasks.forEach(t => cardsEl.appendChild(buildCard(t)));
+
+    // Drop targets
+    cardsEl.addEventListener("dragover", e => {
+      e.preventDefault();
+      colEl.classList.add("drag-over");
+    });
+    cardsEl.addEventListener("dragleave", () => colEl.classList.remove("drag-over"));
+    cardsEl.addEventListener("drop", e => {
+      e.preventDefault();
+      colEl.classList.remove("drag-over");
+      const id = e.dataTransfer.getData("text/plain");
+      const task = state.tasks.find(t => t.id === id);
+      if (task && task.status !== col.id) {
+        task.status = col.id;
+        saveState();
+        renderBoard();
+      }
+    });
+
+    root.appendChild(colEl);
+  });
+}
+
+function buildCard(task) {
+  const el = document.createElement("div");
+  el.className = "card";
+  el.draggable = true;
+  el.dataset.id = task.id;
+
+  const client = task.clientId ? state.clients.find(c => c.id === task.clientId) : null;
+  const overdueClass = isOverdue(task.dueDate) && task.status !== "done" ? " overdue" : "";
+
+  el.innerHTML = `
+    <div class="card-title"></div>
+    ${task.description ? '<div class="card-desc"></div>' : ""}
+    <div class="card-meta">
+      ${client ? `<span class="chip client">${escapeHtml(client.name)}</span>` : ""}
+      ${task.dueDate ? `<span class="chip due${overdueClass}">📅 ${fmtDate(task.dueDate)}</span>` : ""}
+    </div>
+  `;
+  el.querySelector(".card-title").textContent = task.title;
+  if (task.description) el.querySelector(".card-desc").textContent = task.description;
+
+  el.addEventListener("click", () => openTaskModal(task.id));
+  el.addEventListener("dragstart", e => {
+    e.dataTransfer.setData("text/plain", task.id);
+    el.classList.add("dragging");
+  });
+  el.addEventListener("dragend", () => el.classList.remove("dragging"));
+  return el;
+}
+
+/* -------------------- TASK MODAL -------------------- */
+
+function openTaskModal(id, defaultStatus = "todo", defaultClientId = null) {
+  const isEdit = Boolean(id);
+  const task = isEdit ? state.tasks.find(t => t.id === id) : null;
+  const t = task || {
+    id: uid(),
+    title: "",
+    description: "",
+    status: defaultStatus,
+    clientId: defaultClientId,
+    dueDate: "",
+  };
+
+  const clientOptions = ['<option value="">— None —</option>']
+    .concat(state.clients.map(c => `<option value="${c.id}" ${c.id === t.clientId ? "selected" : ""}>${escapeHtml(c.name)}</option>`))
+    .join("");
+
+  showModal({
+    title: isEdit ? "Edit Task" : "New Task",
+    body: `
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="f-title" value="${escapeAttr(t.title)}" placeholder="What needs doing?" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="f-desc" placeholder="Optional details">${escapeHtml(t.description || "")}</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Status</label>
+          <select id="f-status">
+            <option value="todo" ${t.status === "todo" ? "selected" : ""}>To Do</option>
+            <option value="in-progress" ${t.status === "in-progress" ? "selected" : ""}>In Progress</option>
+            <option value="done" ${t.status === "done" ? "selected" : ""}>Done</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Due date</label>
+          <input type="date" id="f-due" value="${t.dueDate || ""}" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Client</label>
+        <select id="f-client">${clientOptions}</select>
+      </div>
+    `,
+    footer: [
+      isEdit ? { label: "Delete", className: "btn btn-danger", onClick: () => {
+        confirmAction("Delete this task?", () => {
+          state.tasks = state.tasks.filter(x => x.id !== t.id);
+          saveState();
+          closeModal();
+          rerender();
+        });
+      }} : null,
+      { label: "Cancel", className: "btn", onClick: closeModal },
+      { label: isEdit ? "Save" : "Create", className: "btn btn-primary", onClick: () => {
+        const title = document.getElementById("f-title").value.trim();
+        if (!title) { alert("Title is required"); return; }
+        const updated = {
+          ...t,
+          title,
+          description: document.getElementById("f-desc").value.trim(),
+          status: document.getElementById("f-status").value,
+          dueDate: document.getElementById("f-due").value || "",
+          clientId: document.getElementById("f-client").value || null,
+        };
+        if (isEdit) {
+          const idx = state.tasks.findIndex(x => x.id === t.id);
+          state.tasks[idx] = updated;
+        } else {
+          state.tasks.push(updated);
+        }
+        saveState();
+        closeModal();
+        rerender();
+      }},
+    ].filter(Boolean),
+  });
+
+  setTimeout(() => document.getElementById("f-title").focus(), 30);
+}
+
+/* -------------------- CLIENTS -------------------- */
+
+function renderClients() {
+  const list = document.getElementById("client-items");
+  list.innerHTML = "";
+  const search = (document.getElementById("client-search").value || "").toLowerCase();
+  const filtered = state.clients
+    .filter(c => !search || c.name.toLowerCase().includes(search) || (c.email||"").toLowerCase().includes(search))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">${state.clients.length === 0 ? "No clients yet. Click + New to add one." : "No matches."}</div>`;
+  } else {
+    filtered.forEach(c => {
+      const el = document.createElement("div");
+      el.className = "client-item" + (c.id === selectedClientId ? " active" : "");
+      el.innerHTML = `
+        <div class="client-item-name"></div>
+        <div class="client-item-sub"></div>
+      `;
+      el.querySelector(".client-item-name").textContent = c.name;
+      el.querySelector(".client-item-sub").textContent = c.email || c.phone || "—";
+      el.onclick = () => { selectedClientId = c.id; renderClients(); };
+      list.appendChild(el);
+    });
+  }
+
+  renderClientDetail();
+}
+
+function renderClientDetail() {
+  const root = document.getElementById("client-detail");
+  if (!selectedClientId) {
+    root.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg>
+        </div>
+        <div>Select a client to see their details, or create a new one.</div>
+      </div>
+    `;
+    return;
+  }
+  const c = state.clients.find(x => x.id === selectedClientId);
+  if (!c) {
+    selectedClientId = null;
+    renderClientDetail();
+    return;
+  }
+  const tasks = state.tasks.filter(t => t.clientId === c.id);
+  const appts = state.appointments.filter(a => a.clientId === c.id).sort((a, b) => (a.date+a.time).localeCompare(b.date+b.time));
+
+  root.innerHTML = `
+    <div class="client-header">
+      <div>
+        <h2 class="client-name-big"></h2>
+        <div class="client-contact-row">
+          ${c.email ? `<span>✉️ <span class="ce"></span></span>` : ""}
+          ${c.phone ? `<span>📞 <span class="cp"></span></span>` : ""}
+        </div>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn" id="edit-client">Edit</button>
+        <button class="btn btn-danger" id="delete-client">Delete</button>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-header"><div class="section-title">Notes</div></div>
+      <textarea class="notes-area" id="client-notes" placeholder="Add notes about this client...">${escapeHtml(c.notes || "")}</textarea>
+    </div>
+
+    <div class="section-block">
+      <div class="section-header">
+        <div class="section-title">Appointments (${appts.length})</div>
+        <button class="btn" id="add-appt-btn">+ Schedule</button>
+      </div>
+      <div id="appt-list"></div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-header">
+        <div class="section-title">Tasks (${tasks.length})</div>
+      </div>
+      <div id="client-tasks"></div>
+      <div class="add-inline">
+        <input type="text" id="quick-task-title" placeholder="Add a task..." />
+        <input type="date" id="quick-task-due" />
+        <button class="btn btn-primary" id="quick-task-add">Add</button>
+      </div>
+    </div>
+  `;
+
+  root.querySelector(".client-name-big").textContent = c.name;
+  if (c.email) root.querySelector(".ce").textContent = c.email;
+  if (c.phone) root.querySelector(".cp").textContent = c.phone;
+
+  // Notes autosave on blur
+  document.getElementById("client-notes").addEventListener("blur", e => {
+    c.notes = e.target.value;
+    saveState();
+  });
+
+  document.getElementById("edit-client").onclick = () => openClientModal(c.id);
+  document.getElementById("delete-client").onclick = () => {
+    confirmAction(`Delete "${c.name}"? Their tasks will be unlinked but kept on the board, and their appointments will be removed.`, () => {
+      state.clients = state.clients.filter(x => x.id !== c.id);
+      state.tasks.forEach(t => { if (t.clientId === c.id) t.clientId = null; });
+      state.appointments = state.appointments.filter(a => a.clientId !== c.id);
+      selectedClientId = null;
+      saveState();
+      renderClients();
+    });
+  };
+
+  // Appointments
+  const apptList = document.getElementById("appt-list");
+  if (appts.length === 0) {
+    apptList.innerHTML = `<div style="color: var(--text-faint); font-size: 13px; padding: 6px 0;">No upcoming appointments.</div>`;
+  } else {
+    appts.forEach(a => {
+      const row = document.createElement("div");
+      row.className = "appt-row";
+      row.innerHTML = `
+        <div>
+          <div class="appt-when"></div>
+          ${a.notes ? '<div class="appt-notes"></div>' : ""}
+        </div>
+        <div style="display:flex; gap:4px;">
+          <button class="btn btn-ghost" data-act="edit">Edit</button>
+          <button class="btn btn-ghost btn-danger" data-act="del">Remove</button>
+        </div>
+      `;
+      const whenStr = `${fmtDateLong(a.date)}${a.time ? " · " + a.time : ""}`;
+      row.querySelector(".appt-when").textContent = whenStr;
+      if (a.notes) row.querySelector(".appt-notes").textContent = a.notes;
+      row.querySelector('[data-act="edit"]').onclick = () => openAppointmentModal(a.id);
+      row.querySelector('[data-act="del"]').onclick = () => {
+        confirmAction("Remove this appointment?", () => {
+          state.appointments = state.appointments.filter(x => x.id !== a.id);
+          saveState();
+          renderClientDetail();
+        });
+      };
+      apptList.appendChild(row);
+    });
+  }
+
+  document.getElementById("add-appt-btn").onclick = () => openAppointmentModal(null, c.id);
+
+  // Tasks
+  const taskList = document.getElementById("client-tasks");
+  if (tasks.length === 0) {
+    taskList.innerHTML = `<div style="color: var(--text-faint); font-size: 13px; padding: 6px 0;">No tasks yet.</div>`;
+  } else {
+    tasks.forEach(t => {
+      const row = document.createElement("div");
+      row.className = "task-row" + (t.status === "done" ? " done" : "");
+      row.innerHTML = `
+        <div class="task-checkbox ${t.status === "done" ? "checked" : ""}" title="Toggle done">
+          ${t.status === "done" ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ""}
+        </div>
+        <div class="task-title-text"></div>
+        ${t.dueDate ? `<span class="chip due${isOverdue(t.dueDate) && t.status !== "done" ? " overdue" : ""}">📅 ${fmtDate(t.dueDate)}</span>` : ""}
+        <span class="task-status-pill">${statusLabel(t.status)}</span>
+        <button class="task-delete" title="Delete">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg>
+        </button>
+      `;
+      row.querySelector(".task-title-text").textContent = t.title;
+      row.querySelector(".task-checkbox").onclick = (e) => {
+        e.stopPropagation();
+        t.status = t.status === "done" ? "todo" : "done";
+        saveState();
+        renderClientDetail();
+      };
+      row.querySelector(".task-delete").onclick = (e) => {
+        e.stopPropagation();
+        confirmAction("Delete this task?", () => {
+          state.tasks = state.tasks.filter(x => x.id !== t.id);
+          saveState();
+          renderClientDetail();
+        });
+      };
+      row.querySelector(".task-title-text").onclick = () => openTaskModal(t.id);
+      taskList.appendChild(row);
+    });
+  }
+
+  // Quick add
+  const quickAdd = () => {
+    const title = document.getElementById("quick-task-title").value.trim();
+    const due = document.getElementById("quick-task-due").value;
+    if (!title) return;
+    state.tasks.push({
+      id: uid(), title, description: "", status: "todo",
+      clientId: c.id, dueDate: due || "",
+    });
+    saveState();
+    renderClientDetail();
+  };
+  document.getElementById("quick-task-add").onclick = quickAdd;
+  document.getElementById("quick-task-title").addEventListener("keydown", e => {
+    if (e.key === "Enter") quickAdd();
+  });
+}
+
+function statusLabel(s) {
+  return { todo: "To Do", "in-progress": "In Progress", done: "Done" }[s] || s;
+}
+
+document.getElementById("new-client-btn").onclick = () => openClientModal(null);
+document.getElementById("client-search").addEventListener("input", () => renderClients());
+
+function openClientModal(id) {
+  const isEdit = Boolean(id);
+  const c = isEdit ? state.clients.find(x => x.id === id) : { id: uid(), name: "", email: "", phone: "", notes: "" };
+
+  showModal({
+    title: isEdit ? "Edit Client" : "New Client",
+    body: `
+      <div class="form-group">
+        <label>Name *</label>
+        <input type="text" id="f-cname" value="${escapeAttr(c.name)}" placeholder="Full name" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="f-cemail" value="${escapeAttr(c.email || "")}" placeholder="name@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="f-cphone" value="${escapeAttr(c.phone || "")}" placeholder="(555) 555-5555" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="f-cnotes" placeholder="Anything important to remember">${escapeHtml(c.notes || "")}</textarea>
+      </div>
+    `,
+    footer: [
+      { label: "Cancel", className: "btn", onClick: closeModal },
+      { label: isEdit ? "Save" : "Create", className: "btn btn-primary", onClick: () => {
+        const name = document.getElementById("f-cname").value.trim();
+        if (!name) { alert("Name is required"); return; }
+        const updated = {
+          ...c,
+          name,
+          email: document.getElementById("f-cemail").value.trim(),
+          phone: document.getElementById("f-cphone").value.trim(),
+          notes: document.getElementById("f-cnotes").value,
+        };
+        if (isEdit) {
+          const idx = state.clients.findIndex(x => x.id === c.id);
+          state.clients[idx] = updated;
+        } else {
+          state.clients.push(updated);
+          selectedClientId = updated.id;
+        }
+        saveState();
+        closeModal();
+        renderClients();
+      }},
+    ],
+  });
+  setTimeout(() => document.getElementById("f-cname").focus(), 30);
+}
+
+/* -------------------- APPOINTMENTS -------------------- */
+
+function openAppointmentModal(id, defaultClientId = null, defaultDate = "") {
+  const isEdit = Boolean(id);
+  const a = isEdit
+    ? state.appointments.find(x => x.id === id)
+    : { id: uid(), clientId: defaultClientId || (state.clients[0] ? state.clients[0].id : ""), date: defaultDate || todayISO(), time: "", notes: "" };
+
+  if (state.clients.length === 0) {
+    showModal({
+      title: "No clients yet",
+      body: `<p class="confirm-text">You need to add a client first before scheduling an appointment.</p>`,
+      footer: [
+        { label: "Close", className: "btn", onClick: closeModal },
+        { label: "Add a client", className: "btn btn-primary", onClick: () => { closeModal(); switchView("clients"); openClientModal(null); }},
+      ],
+    });
+    return;
+  }
+
+  const clientOptions = state.clients
+    .map(c => `<option value="${c.id}" ${c.id === a.clientId ? "selected" : ""}>${escapeHtml(c.name)}</option>`)
+    .join("");
+
+  showModal({
+    title: isEdit ? "Edit Appointment" : "New Appointment",
+    body: `
+      <div class="form-group">
+        <label>Client</label>
+        <select id="f-aclient">${clientOptions}</select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="f-adate" value="${a.date}" />
+        </div>
+        <div class="form-group">
+          <label>Time</label>
+          <input type="time" id="f-atime" value="${a.time || ""}" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="f-anotes" placeholder="Anything about this meeting">${escapeHtml(a.notes || "")}</textarea>
+      </div>
+    `,
+    footer: [
+      isEdit ? { label: "Delete", className: "btn btn-danger", onClick: () => {
+        confirmAction("Delete this appointment?", () => {
+          state.appointments = state.appointments.filter(x => x.id !== a.id);
+          saveState();
+          closeModal();
+          rerender();
+        });
+      }} : null,
+      { label: "Cancel", className: "btn", onClick: closeModal },
+      { label: isEdit ? "Save" : "Create", className: "btn btn-primary", onClick: () => {
+        const updated = {
+          ...a,
+          clientId: document.getElementById("f-aclient").value,
+          date: document.getElementById("f-adate").value,
+          time: document.getElementById("f-atime").value,
+          notes: document.getElementById("f-anotes").value.trim(),
+        };
+        if (!updated.date) { alert("Date is required"); return; }
+        if (isEdit) {
+          const idx = state.appointments.findIndex(x => x.id === a.id);
+          state.appointments[idx] = updated;
+        } else {
+          state.appointments.push(updated);
+        }
+        saveState();
+        closeModal();
+        rerender();
+      }},
+    ].filter(Boolean),
+  });
+}
+
+/* -------------------- CALENDAR -------------------- */
+
+function renderCalendar() {
+  const grid = document.getElementById("calendar-grid");
+  grid.innerHTML = "";
+
+  const year = calCursor.getFullYear();
+  const month = calCursor.getMonth();
+  document.getElementById("cal-month-label").textContent =
+    calCursor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(d => {
+    const el = document.createElement("div");
+    el.className = "cal-weekday";
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const firstOfMonth = new Date(year, month, 1);
+  const startDayOfWeek = firstOfMonth.getDay();
+  const startDate = new Date(year, month, 1 - startDayOfWeek);
+
+  const today = todayISO();
+
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    const iso = d.toISOString().slice(0, 10);
+    const otherMonth = d.getMonth() !== month;
+
+    const cell = document.createElement("div");
+    cell.className = "cal-day" + (otherMonth ? " other-month" : "") + (iso === today ? " today" : "");
+    cell.dataset.date = iso;
+
+    const num = document.createElement("div");
+    num.className = "cal-day-num";
+    num.textContent = d.getDate();
+    cell.appendChild(num);
+
+    // Appointments on that day
+    const appts = state.appointments.filter(a => a.date === iso);
+    appts.forEach(a => {
+      const client = state.clients.find(c => c.id === a.clientId);
+      const ev = document.createElement("div");
+      ev.className = "cal-event";
+      ev.textContent = (a.time ? a.time + " " : "") + (client ? client.name : "Appointment");
+      ev.title = (client ? client.name : "Appointment") + (a.notes ? " — " + a.notes : "");
+      ev.onclick = (e) => { e.stopPropagation(); openAppointmentModal(a.id); };
+      cell.appendChild(ev);
+    });
+
+    // Tasks due that day
+    const dueTasks = state.tasks.filter(t => t.dueDate === iso);
+    dueTasks.forEach(t => {
+      const ev = document.createElement("div");
+      ev.className = "cal-event task" + (t.status === "done" ? " done" : "");
+      ev.textContent = "✓ " + t.title;
+      ev.title = "Task: " + t.title;
+      ev.onclick = (e) => { e.stopPropagation(); openTaskModal(t.id); };
+      cell.appendChild(ev);
+    });
+
+    cell.addEventListener("click", () => openAppointmentModal(null, null, iso));
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById("cal-prev").onclick = () => {
+  calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() - 1, 1);
+  renderCalendar();
+};
+document.getElementById("cal-next").onclick = () => {
+  calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + 1, 1);
+  renderCalendar();
+};
+document.getElementById("cal-today").onclick = () => {
+  calCursor = new Date();
+  renderCalendar();
+};
+
+/* -------------------- MODAL -------------------- */
+
+function showModal({ title, body, footer }) {
+  document.getElementById("modal-title").textContent = title;
+  document.getElementById("modal-body").innerHTML = body;
+  const footEl = document.getElementById("modal-footer");
+  footEl.innerHTML = "";
+  footer.forEach(f => {
+    const b = document.createElement("button");
+    b.className = f.className;
+    b.textContent = f.label;
+    b.onclick = f.onClick;
+    footEl.appendChild(b);
+  });
+  document.getElementById("modal-overlay").classList.add("open");
+}
+
+function closeModal() {
+  document.getElementById("modal-overlay").classList.remove("open");
+}
+
+document.getElementById("modal-close").onclick = closeModal;
+document.getElementById("modal-overlay").addEventListener("click", e => {
+  if (e.target.id === "modal-overlay") closeModal();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeModal();
+});
+
+function confirmAction(message, onYes) {
+  showModal({
+    title: "Are you sure?",
+    body: `<p class="confirm-text">${escapeHtml(message)}</p>`,
+    footer: [
+      { label: "Cancel", className: "btn", onClick: closeModal },
+      { label: "Yes, do it", className: "btn btn-danger", onClick: () => { onYes(); } },
+    ],
+  });
+}
+
+/* -------------------- Utils -------------------- */
+
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+function rerender() {
+  if (currentView === "board") renderBoard();
+  if (currentView === "clients") renderClients();
+  if (currentView === "calendar") renderCalendar();
+}
+
+/* -------------------- Seed (first-run sample) -------------------- */
+if (state.clients.length === 0 && state.tasks.length === 0 && state.appointments.length === 0) {
+  const c1 = { id: uid(), name: "Sample Client (you can delete this)", email: "sample@example.com", phone: "555-0100", notes: "First-time consultation. Prefers afternoon meetings." };
+  state.clients.push(c1);
+  state.tasks.push(
+    { id: uid(), title: "Welcome to OrgFlow!", description: "Click + New task to add your own. Drag cards between columns to update status.", status: "todo", clientId: null, dueDate: "" },
+    { id: uid(), title: "Send intake form", description: "Email the standard intake form.", status: "in-progress", clientId: c1.id, dueDate: "" },
+    { id: uid(), title: "Initial call", description: "30 min discovery call.", status: "done", clientId: c1.id, dueDate: "" }
+  );
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  state.appointments.push({ id: uid(), clientId: c1.id, date: tomorrow.toISOString().slice(0,10), time: "14:00", notes: "Kickoff meeting" });
+  saveState();
+}
+
+/* -------------------- Boot -------------------- */
+renderTopbarActions();
+renderBoard();
+</script>
+
+</body>
+</html>
